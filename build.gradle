@@ -1,12 +1,91 @@
 apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'idea'
 
-sourceCompatibility = 1.5
 version = '1.0'
+
+def wowzaLibsPath = "${rootProject.projectDir}/libs/wowza/4.1.3"
+def localWowzaPath = "C:/Program Files (x86)/Wowza Media Systems/Wowza Streaming Engine 4.1.0"
+def serviceName = "WowzaStreamingEngine410"
+def applicationName = 'testgradle'
+
+def apacheHttpClient = 'org.apache.httpcomponents:httpclient:4.1.1'
+def apacheHttpCore = 'org.apache.httpcomponents:httpcore:4.4'
+def apacheHttpMime = 'org.apache.httpcomponents:httpmime:4.3.6'
+def apacheHttpClientCache = 'org.apache.httpcomponents:httpclient-cache:4.3.6'
 
 repositories {
     mavenCentral()
 }
 
-dependencies {
-    testCompile group: 'junit', name: 'junit', version: '4.11'
+configurations {
+    pack
 }
+
+dependencies {
+    pack "$apacheHttpCore"
+    pack "$apacheHttpClient"
+    pack "$apacheHttpMime"
+    pack "$apacheHttpClientCache"
+
+    testCompile(group: 'junit', name: 'junit', version: '4.11')
+
+    compile "$apacheHttpCore"
+    compile "$apacheHttpClient"
+    compile "$apacheHttpMime"
+    compile "$apacheHttpClientCache"
+
+    // Wowza 4.0 onward packages apache httpClient and there might be dependency issues:
+    // http://www.wowza.com/forums/showthread.php?35743-Conflicting-classes-after-upgrade-to-4-0-1
+    // Due to this fact, we exclude wms-restlet* from the wowzaLibsPath libraries as gradle tests
+    // do not pass with those dependencies included.
+    compile fileTree(dir: "$wowzaLibsPath", include: '*.jar', exclude: '*wms-restlet*')
+}
+
+task printWowzaLibraryPath << {
+    println("The Wowza library path is: " + wowzaLibsPath)
+}
+
+task packcageJars(type: Jar) {
+    manifest {
+        attributes 'Implementation-Version': version
+    }
+    baseName = project.name
+    from { configurations.pack.collect { it.isDirectory() ? it : zipTree(it) } }
+    with jar
+}
+
+task deploy(dependsOn: build) {
+    copy {
+        from jar.archivePath.absolutePath
+        into "${localWowzaPath}/lib"
+    }
+    copy {
+        from "${project.projectDir}/Application.xml"
+        into "${localWowzaPath}/conf/${applicationName}"
+    }
+    mkdir("${localWowzaPath}/applications/${applicationName}")
+}
+
+task stopWowza << {
+    println 'shutdown wowza'
+    exec {
+        commandLine = ['cmd', '/c', 'net', 'stop', serviceName] // this only works on windows
+        ignoreExitValue = true
+    }
+}
+
+task startWowza << {
+    println 'start wowza'
+    exec {
+        commandLine = ['cmd', '/c', 'net', 'start', serviceName] // this only works on windows
+        ignoreExitValue = true
+    }
+}
+
+task restartWowza << {
+    stopWowza.execute()
+    startWowza.execute()
+}
+
+tasks.build.dependsOn(packcageJars)
