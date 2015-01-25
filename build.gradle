@@ -14,12 +14,12 @@ def apacheHttpCore = 'org.apache.httpcomponents:httpcore:4.4'
 def apacheHttpMime = 'org.apache.httpcomponents:httpmime:4.3.6'
 def apacheHttpClientCache = 'org.apache.httpcomponents:httpclient-cache:4.3.6'
 
-repositories {
-    mavenCentral()
-}
-
 configurations {
     pack
+}
+
+repositories {
+    mavenCentral()
 }
 
 dependencies {
