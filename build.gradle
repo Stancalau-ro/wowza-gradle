@@ -5,70 +5,61 @@ apply plugin: 'idea'
 version = '1.0'
 
 def wowzaLibsPath = "${rootProject.projectDir}/libs/wowza/4.1.3"
-def localWowzaPath = "C:/Program Files (x86)/Wowza Media Systems/Wowza Streaming Engine 4.1.0"
-def serviceName = "WowzaStreamingEngine410"
+def localWowzaPath = "${System.env['ProgramFiles(x86)']}/Wowza Media Systems/Wowza Streaming Engine 4.1.0"
+def serviceName = 'WowzaStreamingEngine410'
 def applicationName = 'testgradle'
 
-def apacheHttpClient = 'org.apache.httpcomponents:httpclient:4.1.1'
-def apacheHttpCore = 'org.apache.httpcomponents:httpcore:4.4'
-def apacheHttpMime = 'org.apache.httpcomponents:httpmime:4.3.6'
-def apacheHttpClientCache = 'org.apache.httpcomponents:httpclient-cache:4.3.6'
+def apacheHttpClient = [group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.1.1']
+def apacheHttpCore = [group: 'org.apache.httpcomponents', name: 'httpcore', version: '4.4']
+def apacheHttpMime = [group: 'org.apache.httpcomponents', name: 'httpmime', version: '4.3.6']
+def apacheHttpClientCache = [group: 'org.apache.httpcomponents', name: 'httpclient-cache', version: '4.3.6']
 
 configurations {
     pack
+    compile.extendsFrom pack
 }
 
-repositories {
-    mavenCentral()
-}
+repositories { mavenCentral() }
 
 dependencies {
-    pack "$apacheHttpCore"
-    pack "$apacheHttpClient"
-    pack "$apacheHttpMime"
-    pack "$apacheHttpClientCache"
-
-    testCompile(group: 'junit', name: 'junit', version: '4.11')
-
-    compile "$apacheHttpCore"
-    compile "$apacheHttpClient"
-    compile "$apacheHttpMime"
-    compile "$apacheHttpClientCache"
+    pack apacheHttpCore, apacheHttpClient, apacheHttpMime, apacheHttpClientCache
 
     // Wowza 4.0 onward packages apache httpClient and there might be dependency issues:
     // http://www.wowza.com/forums/showthread.php?35743-Conflicting-classes-after-upgrade-to-4-0-1
     // Due to this fact, we exclude wms-restlet* from the wowzaLibsPath libraries as gradle tests
     // do not pass with those dependencies included.
-    compile fileTree(dir: "$wowzaLibsPath", include: '*.jar', exclude: '*wms-restlet*')
+    compile fileTree(dir: wowzaLibsPath, include: '*.jar', exclude: '*wms-restlet*')
+
+    testCompile([group: 'junit', name: 'junit', version: '4.11'])
 }
 
 task printWowzaLibraryPath << {
-    println("The Wowza library path is: " + wowzaLibsPath)
+    println("The Wowza library path is: $wowzaLibsPath")
 }
 
-task packcageJars(type: Jar) {
+task packageJars(type: Jar) {
     manifest {
         attributes 'Implementation-Version': version
     }
     baseName = project.name
-    from { configurations.pack.collect { it.isDirectory() ? it : zipTree(it) } }
+    from { configurations.pack.collect { it.directory ? it : zipTree(it) } }
     with jar
 }
 
 task deploy(dependsOn: build) {
     copy {
         from jar.archivePath.absolutePath
-        into "${localWowzaPath}/lib"
+        into "$localWowzaPath/lib"
     }
     copy {
-        from "${project.projectDir}/Application.xml"
-        into "${localWowzaPath}/conf/${applicationName}"
+        from "$project.projectDir/Application.xml"
+        into "$localWowzaPath/conf/$applicationName"
     }
-    mkdir("${localWowzaPath}/applications/${applicationName}")
+    mkdir("$localWowzaPath/applications/$applicationName")
 }
 
 task stopWowza << {
-    println 'shutdown wowza'
+    println 'shutting down wowza'
     exec {
         commandLine = ['cmd', '/c', 'net', 'stop', serviceName] // this only works on windows
         ignoreExitValue = true
@@ -76,7 +67,7 @@ task stopWowza << {
 }
 
 task startWowza << {
-    println 'start wowza'
+    println 'starting wowza'
     exec {
         commandLine = ['cmd', '/c', 'net', 'start', serviceName] // this only works on windows
         ignoreExitValue = true
@@ -88,4 +79,4 @@ task restartWowza << {
     startWowza.execute()
 }
 
-tasks.build.dependsOn(packcageJars)
+tasks.build.dependsOn packageJars
