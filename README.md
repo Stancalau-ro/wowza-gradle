@@ -1,8 +1,13 @@
-#README #
+# Wowza Gradle Build #
 
-For more information about this project, please visit [this page](http://stancalau.ro/building-wowza-gradle/).
+An short Wowza module project that exemplifies how you can build it using Gradle.
 
-Feel free to clone and fork this repo and use it as you see fit. There are no restrictions, but I would kindly ask for a reference to the original work if you plan to share your derived work with others.
+### Prerequisites ###
 
-Best regards,
-Cristian S.
+* [Download and install Gradle](https://gradle.org/)
+* Install a local Wowza Server (if you want to use the deploy task)
+* Ensure PATH environment variable contains path to Gradle
+* Edit the local Wowza paths in build.gradle
+* Run `gradle build` in the project root to build the entire project
+
+More information about this project can be found here: http://stancalau.ro/building-wowza-gradle/
