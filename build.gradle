@@ -9,11 +9,6 @@ def localWowzaPath = "${System.env['ProgramFiles(x86)']}/Wowza Media Systems/Wow
 def serviceName = 'WowzaStreamingEngine410'
 def applicationName = 'testgradle'
 
-def apacheHttpClient = [group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.1.1']
-def apacheHttpCore = [group: 'org.apache.httpcomponents', name: 'httpcore', version: '4.4']
-def apacheHttpMime = [group: 'org.apache.httpcomponents', name: 'httpmime', version: '4.3.6']
-def apacheHttpClientCache = [group: 'org.apache.httpcomponents', name: 'httpclient-cache', version: '4.3.6']
-
 configurations {
     pack
     compile.extendsFrom pack
@@ -22,7 +17,11 @@ configurations {
 repositories { mavenCentral() }
 
 dependencies {
-    pack apacheHttpCore, apacheHttpClient, apacheHttpMime, apacheHttpClientCache
+    pack([group: 'org.apache.httpcomponents', name: 'httpcore', version: '4.4'],
+         [group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.1.1'],
+         [group: 'org.apache.httpcomponents', name: 'httpmime', version: '4.3.6'],
+         [group: 'org.apache.httpcomponents', name: 'httpclient-cache', version: '4.3.6']
+    )
 
     // Wowza 4.0 onward packages apache httpClient and there might be dependency issues:
     // http://www.wowza.com/forums/showthread.php?35743-Conflicting-classes-after-upgrade-to-4-0-1
